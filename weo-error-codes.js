@@ -2,29 +2,36 @@ var _ = require('lodash')
   , _s = require('underscore.string');
 module.exports = require('./package.json').name;
 angular.module(module.exports, [])
-.factory('WeoError', function() {
+.factory('WeoError', ['$q', function($q) {
   function WeoError(form) {
     var self = this;
     this.data = {};
     this.form = form;
-    _.each(this.form, function(field, fieldName) {
+    function addField(field) {
       field && field.$parsers && field.$parsers.unshift(function(val) {
         _.each(self.data, function(data, action) {
           self.success(action)();
         });
         return val;
       });
-    });
+    }
+    _.each(this.form, addField);
+    // add validators for future fields on form
+    var addControl = form.$addControl;
+    form.$addControl = function(control) {
+      addControl.call(form, control);
+      addField(control);
+    };
   }
 
   WeoError.prototype.success = function(key) {
     var self = this;
-    return function() {
+    return function(val) {
       _.each(self.data[key], function(error) {
-        console.log('success', error.field, error.code);
         self.form[error.field].$setValidity(error.code, true);
       });
       delete self.data[key];
+      return val;
     };
   };
 
@@ -35,8 +42,9 @@ angular.module(module.exports, [])
       err && _.each(err.data.errors, function(error) {
         self.form[error.field].$setValidity(error.code, false);
       });
+      return $q.reject(err);
     };
   }
 
   return WeoError;
-});
+}]);
