@@ -11,7 +11,7 @@ module.exports = function(codes) {
 
       var error =  {
         code: function(code, resource, field) {
-          errors.push({resouce: resource, field: field, code: code});
+          errors.push({resource: resource, field: field, code: code});
           return this; 
         },
         send: function() {
