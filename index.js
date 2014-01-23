@@ -5,25 +5,48 @@ var defaultCodes = ["missing", "missing_field", "invalid", "already_exists"];
 
 module.exports = function(codes) {
   codes = defaultCodes.concat(codes);
-  return function(req, res, next) {
-    res.clientError = function(code, message) {
-      var errors = [];
+  return function(message) {
+    function ClientError(message) {
+      this.message = message;
+      this.errors = [];
+    }
 
-      var error =  {
-        code: function(code, resource, field) {
-          errors.push({resource: resource, field: field, code: code});
-          return this; 
-        },
-        send: function() {
-          res.json(code, {message: message, errors: errors});
-        }
-      };
-      _.each(codes, function(code) {
-        error[_s.camelize(code)] = _.partial(error.code, code);
-      });
-      return error;
+    ClientError.prototype.fromSails = function(resource, sailsError) {
+      var self = this;
+      if(sailsError.ValidationError) {
+        this.message = 'ValidationError';
+        _.each(sailsError.ValidationError, function(errors, field) {
+          _.each(errors, function(err) {
+            var code;
+            switch(err.rule) {
+            case 'unique':
+              code = 'already_exists';
+              break;
+            case 'required':
+              code = 'missing_field';
+              break;
+            default:
+              code = 'invalid';
+              break;
+            }
+            self[code](resource, field, err);
+          });
+        });
+      }
     };
 
-    next();
+    _.each(codes, function(code) {
+      ClientError.prototype[_s.camelize(code)] = function(resource, field, details) {
+        this.errors.push({
+          resource: resource,
+          field: field,
+          code: code, 
+          details: details
+        });
+        return this;
+      };
+    });
+
+    return new ClientError(message);
   };
 };
