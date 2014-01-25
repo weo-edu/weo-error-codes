@@ -1,7 +1,7 @@
 {
   "name": "weo-error-codes",
   "version": "0.0.1",
-  "description": "",
+  "description": "error handling library for the WEO/EOS API server",
   "main": "index.js",
   "repository": "git://github.com/weo-edu/weo-error-codes.git",
   "browser": "weo-error-codes.js",
