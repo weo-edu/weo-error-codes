@@ -38,7 +38,7 @@ module.exports = function(codes) {
                 break;
               }
               delete err.message;
-              self[code](resource, field, err);
+              self[_s.camelize(code)](resource, field, err);
             });
           });
         }
